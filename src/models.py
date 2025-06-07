@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 db = SQLAlchemy()
 
@@ -12,6 +12,7 @@ class User(db.Model):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     address: Mapped[str] = mapped_column(String(120), nullable=False)
     country: Mapped[str] = mapped_column(String(120), nullable=False)
+    favorite_character: Mapped[list['Fav_character']]= relationship(back_populates= 'user')
 
 
     def serialize(self):
@@ -39,3 +40,8 @@ class Character(db.Model):
             "gender": self.gender,
             "eye_color": self.eye_color
         }
+    
+class Fav_character(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('user.id'))
+    character_id: Mapped[int] = mapped_column(ForeignKey('character.id'))
