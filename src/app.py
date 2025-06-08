@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Character
 #from models import Person
 
 app = Flask(__name__)
@@ -38,16 +38,70 @@ def sitemap():
 
 @app.route('/users', methods=['GET'])
 def get_users():
+    try:
+        query_results = User.query.all()
 
-    query_results = User.query.all()
-    results = list(map(lambda item: item.serialize(), query_results))
+        if not query_results:
+            return jsonify({'msg': 'No users found'}), 400
+        
+        results = list(map(lambda item: item.serialize(), query_results))
 
-    response_body = {
-        'msg': 'ok',
-        'results': results
-    }
+        response_body = {
+            'msg': 'ok',
+            'results': results
+        }
 
-    return jsonify(response_body), 200
+        return jsonify(response_body), 200
+    
+    except Exception as e:
+        return jsonify({
+            'msg': f'Internal server error',
+            'error': {str(e)}
+        }), 500
+    
+@app.route('/characters', methods=['GET'])
+def get_characters():
+    try:
+        query_results = Character.query.all()
+
+        if not query_results:
+            return jsonify({'msg': 'No characters found'}), 400
+        
+        results = list(map(lambda item: item.serialize(), query_results))
+        response_body = {
+            'msg': 'ok',
+            'results': results
+        }
+        return jsonify(response_body), 200
+    
+    except Exception as e:
+        return ({
+            'msg': f'Internal server error',
+            'error': {str(e)}
+        }), 500
+    
+@app.route('/characters/<int:id>', methods=['GET'])
+def get_character_id():
+    try:
+        query_results = Character.query.get(id)
+
+        if not query_results:
+            return jsonify({
+                'msg': 'Character not found'
+            }), 400
+        
+        results = list(map(lambda item: item.serialize(), query_results))
+        response_body = {
+            'msg': 'ok',
+            'results': results
+        }
+        return jsonify(response_body)
+    except Exception as e:
+        return jsonify({
+            'msg': f'Internal server error',
+            'error': {str(e)}
+        }), 500
+
 
 @app.route('/user', methods=['POST'])
 def create_user():
