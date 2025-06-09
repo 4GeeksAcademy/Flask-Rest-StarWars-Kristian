@@ -27,6 +27,13 @@ class User(db.Model):
             "country": self.country
             # do not serialize the password, its a security breach
         }
+    def serialize_with_favorites(self):
+        return {
+            **self.serialize(), 
+            "favorite_character": [favorite.serialize() for favorite in self.favorite_character] if len(self.favorite_character) > 0 else [],
+            "favorite_planet": [favorite.serialize() for favorite in self.favorite_planet] if len(self.favorite_planet) > 0 else [],
+            "favorite_vehicle": [favorite.serialize() for favorite in self.favorite_vehicle] if len(self.favorite_vehicle) > 0 else [],
+        }
 
 class Character(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -92,11 +99,7 @@ class Fav_character(db.Model):
     character: Mapped['Character'] = relationship(back_populates= 'favorite_by_links')
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "character_id": self.character_id
-        }
+        return self.character.serialize()
 
 class Fav_planet(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -106,11 +109,7 @@ class Fav_planet(db.Model):
     planet: Mapped['Planet'] = relationship(back_populates= 'favorite_by_links')
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "planet_id": self.planet_id
-        }
+        return self.planet.serialize()
     
 class Fav_vehicle(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -118,3 +117,6 @@ class Fav_vehicle(db.Model):
     vehicle_id: Mapped[int] = mapped_column(ForeignKey('vehicle.id'))
     user: Mapped['User'] = relationship(back_populates= 'favorite_vehicle')
     vehicle: Mapped['Vehicle'] = relationship(back_populates= 'favorite_by_links')
+
+    def serialize(self):
+        return self.vehicle.serialize()

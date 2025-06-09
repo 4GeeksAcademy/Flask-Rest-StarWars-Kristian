@@ -73,17 +73,8 @@ def get_favorites(id):
         if not query_result:
             return jsonify({'msg': 'No user found'}), 404
         
-        characters = query_result.favorite_character
 
-
-        favorites = list(map(lambda item: item.serialize(), query_result))
-
-        response_body = {
-            'msg': 'ok',
-            'results': favorites
-        }
-
-        return jsonify(response_body), 200
+        return jsonify(query_result.serialize_with_favorites()), 200
 
     except Exception as e:
         return jsonify({
