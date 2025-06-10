@@ -162,7 +162,7 @@ def get_planet_id(id):
             'msg': 'ok',
             'result': planet.serialize()
         }
-        return jsonify(response_body)
+        return jsonify(response_body), 200
     except Exception as e:
         return jsonify({
             'msg': f'Internal server error',
@@ -193,6 +193,29 @@ def create_user():
     try:
         db.session.commit()
         return jsonify(new_user.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+    
+@app.route('/users/<int:id>/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_favorite_planet(id, planet_id):
+    try:
+        user = User.query.get(id)
+        planet = Planet.query.get(planet_id)
+        if not user or not planet:
+            return jsonify({"msg": "user or planet not found"}), 404
+        
+        existing_favorite = Fav_planet.query.filter_by(user_id=id, planet_id=planet_id).first()
+        if existing_favorite:
+            return jsonify({
+                "msg": "Favorite already added"
+            }), 409
+        
+        new_fav_planet = Fav_planet(user_id=id, planet_id=planet_id)
+        db.session.add(new_fav_planet)
+        db.session.commit()
+
+        return jsonify(new_fav_planet.serialize()), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
