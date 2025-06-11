@@ -104,10 +104,10 @@ def get_characters():
         }), 500
 
 
-@app.route('/characters/<int:id>', methods=['GET'])
-def get_character_id(id):
+@app.route('/characters/<int:character_id>', methods=['GET'])
+def get_character_id(character_id):
     try:
-        character = Character.query.get(id)
+        character = Character.query.get(character_id)
 
         if not character:
             return jsonify({
@@ -148,10 +148,10 @@ def get_planets():
         }), 500
 
 
-@app.route('/planets/<int:id>', methods=['GET'])
-def get_planet_id(id):
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def get_planet_id(planet_id):
     try:
-        planet = Planet.query.get(id)
+        planet = Planet.query.get(planet_id)
 
         if not planet:
             return jsonify({
@@ -195,50 +195,92 @@ def create_user():
         return jsonify(new_user.serialize()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+        return jsonify({
+            'msg': f'Internal Server Error', 
+            'error': {str(e)}
+            }), 500
     
-@app.route('/users/<int:id>/favorite/planet/<int:planet_id>', methods=['POST'])
-def add_favorite_planet(id, planet_id):
+@app.route('/users/<int:user_id>/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_favorite_planet(user_id, planet_id):
     try:
-        user = User.query.get(id)
+        user = User.query.get(user_id)
         planet = Planet.query.get(planet_id)
         if not user or not planet:
             return jsonify({"msg": "user or planet not found"}), 404
         
-        existing_favorite = Fav_planet.query.filter_by(user_id=id, planet_id=planet_id).first()
+        existing_favorite = Fav_planet.query.filter_by(user_id=user_id, planet_id=planet_id).first()
         if existing_favorite:
             return jsonify({
                 "msg": "Favorite already added"
             }), 409
         
-        new_fav_planet = Fav_planet(user_id=id, planet_id=planet_id)
+        new_fav_planet = Fav_planet(user_id=user_id, planet_id=planet_id)
         db.session.add(new_fav_planet)
         db.session.commit()
 
         return jsonify(new_fav_planet.serialize()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+        return jsonify({
+            'msg': f'Internal Server Error', 
+            'error': {str(e)}
+            }), 500
     
-@app.route('/users/<int:id>/favorite/character/<int:character_id>', methods=['POST'])
-def add_favorite_character(id, character_id):
+@app.route('/users/<int:user_id>/favorite/character/<int:character_id>', methods=['POST'])
+def add_favorite_character(user_id, character_id):
     try:
-        user = User.query.get(id)
+        user = User.query.get(user_id)
         character = Character.query.get(character_id)
         if not user or not character:
             return jsonify({"msg": "user or planet not found"}), 404
         
-        existing_favorite = Fav_character.query.filter_by(user_id=id, character_id=character_id).first()
+        existing_favorite = Fav_character.query.filter_by(user_id=user_id, character_id=character_id).first()
         if existing_favorite:
             return jsonify({
                 "msg": "Favorite already added"
             }), 409
         
-        new_fav_character = Fav_character(user_id=id, character_id=character_id)
+        new_fav_character = Fav_character(user_id=user_id, character_id=character_id)
         db.session.add(new_fav_character)
         db.session.commit()
 
         return jsonify(new_fav_character.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+    
+@app.route('/users/<int:user_id>/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def remove_favorite_planet(user_id, planet_id):
+    try:
+        user = User.query.get(user_id)
+        planet = Planet.query.get(planet_id)
+        if not user or not planet:
+            return jsonify({'msg': 'user or planet not found'}), 404
+        
+        favorite_planet = Fav_planet.query.filter_by(user_id=user_id, planet_id=planet_id).first()
+        if not favorite_planet:
+            return jsonify({'msg': 'Favorite planet not found'}), 404
+        db.session.delete(favorite_planet)
+        db.session.commit()
+        return jsonify({'msg': 'Favorite planet removed succesfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+    
+@app.route('/users/<int:user_id>/favorite/character/<int:character_id>', methods=['DELETE'])
+def remove_favorite_character(user_id, character_id):
+    try:
+        user = User.query.get(user_id)
+        character = Character.query.get(character_id)
+        if not user or not character:
+            return jsonify({'msg': 'user or character not found'}), 404
+        
+        favorite_character = Fav_character.query.filter_by(user_id=user_id, character_id=character_id).first()
+        if not favorite_character:
+            return jsonify({'msg': 'Favorite character not found'}), 404
+        db.session.delete(favorite_character)
+        db.session.commit()
+        return jsonify({'msg': 'Favorite character removed succesfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
