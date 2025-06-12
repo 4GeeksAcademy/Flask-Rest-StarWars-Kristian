@@ -169,6 +169,49 @@ def get_planet_id(planet_id):
             'error': {str(e)}
         }), 500
 
+@app.route('/vehicles', methods=['GET'])
+def get_cvehciles():
+    try:
+        query_results = Vehicle.query.all()
+
+        if not query_results:
+            return jsonify({'msg': 'No vehicles found'}), 400
+
+        vehicles = list(map(lambda item: item.serialize(), query_results))
+        response_body = {
+            'msg': 'ok',
+            'results': vehicles
+        }
+        return jsonify(response_body), 200
+
+    except Exception as e:
+        return ({
+            'msg': f'Internal server error',
+            'error': {str(e)}
+        }), 500
+
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_vehicle_id(vehicle_id):
+    try:
+        vehicle = Vehicle.query.get(vehicle_id)
+
+        if not vehicle:
+            return jsonify({
+                'msg': 'Vehicle not found'
+            }), 400
+
+        response_body = {
+            'msg': 'ok',
+            'result': vehicle.serialize()
+        }
+        return jsonify(response_body), 200
+    except Exception as e:
+        return jsonify({
+            'msg': f'Internal server error',
+            'error': {str(e)}
+        }), 500
+
+
 
 @app.route('/user', methods=['POST'])
 def create_user():
@@ -249,6 +292,29 @@ def add_favorite_character(user_id, character_id):
         db.session.rollback()
         return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
     
+@app.route('/users/<int:user_id>/favorite/vehicle/<int:vehicle_id>', methods=['POST'])
+def add_favorite_vehicle(user_id, vehicle_id):
+    try:
+        user = User.query.get(user_id)
+        vehicle = Vehicle.query.get(vehicle_id)
+        if not user or not vehicle:
+            return jsonify({"msg": "user or vehicle not found"}), 404
+        
+        existing_favorite = Fav_vehicle.query.filter_by(user_id=user_id, vehicle_id=vehicle_id).first()
+        if existing_favorite:
+            return jsonify({
+                "msg": "Favorite already added"
+            }), 409
+        
+        new_fav_vehicle = Fav_vehicle(user_id=user_id, vehicle_id=vehicle_id)
+        db.session.add(new_fav_vehicle)
+        db.session.commit()
+
+        return jsonify(new_fav_vehicle.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+    
 @app.route('/users/<int:user_id>/favorite/planet/<int:planet_id>', methods=['DELETE'])
 def remove_favorite_planet(user_id, planet_id):
     try:
@@ -281,6 +347,24 @@ def remove_favorite_character(user_id, character_id):
         db.session.delete(favorite_character)
         db.session.commit()
         return jsonify({'msg': 'Favorite character removed succesfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
+    
+@app.route('/users/<int:user_id>/favorite/vehicle/<int:vehicle_id>', methods=['DELETE'])
+def remove_favorite_vehicle(user_id, vehicle_id):
+    try:
+        user = User.query.get(user_id)
+        vehicle = Vehicle.query.get(vehicle_id)
+        if not user or not vehicle:
+            return jsonify({'msg': 'user or vehicle not found'}), 404
+        
+        favorite_vehicle = Fav_vehicle.query.filter_by(user_id=user_id, vehicle_id=vehicle_id).first()
+        if not favorite_vehicle:
+            return jsonify({'msg': 'Favorite vehicle not found'}), 404
+        db.session.delete(favorite_vehicle)
+        db.session.commit()
+        return jsonify({'msg': 'Favorite vehicle removed succesfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'msg': f'Internal Server Error', 'error': {str(e)}}), 500
